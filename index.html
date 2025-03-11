@@ -3,165 +3,104 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Buscador de Estaciones Renfe</title>
-    <link rel="manifest" href="manifest.json">
+    <title>Buscador de Estaciones</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.3/xlsx.full.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
         body {
-            background: black;
-            background-image: radial-gradient(circle, rgba(0, 128, 0, 0.3) 10%, transparent 70%),
-                              radial-gradient(circle, rgba(0, 128, 0, 0.2) 20%, transparent 80%),
-                              radial-gradient(circle, rgba(0, 128, 0, 0.4) 15%, transparent 75%);
-            background-position: 20% 30%, 70% 50%, 50% 80%;
-            background-size: 400px 400px, 600px 600px, 500px 500px;
-            background-repeat: no-repeat;
-            color: white;
             font-family: Arial, sans-serif;
+            background-color: #0A3D50;
+            color: white;
             display: flex;
-            flex-direction: column;
-            align-items: center;
             justify-content: center;
+            align-items: center;
             height: 100vh;
-            margin: 0;
         }
-        .contenedor {
-            background: rgba(0, 0, 0, 0.8);
+        .container {
+            background: white;
+            color: black;
             padding: 20px;
-            border-radius: 30px;
-            box-shadow: 0px 0px 20px rgba(0, 255, 0, 0.3);
-            width: 95%;
-            max-width: 500px;
-            text-align: center;
-        }
-        select, input, button {
-            width: calc(100% - 20px);
-            margin: 10px 0;
-            padding: 12px;
-            border: none;
-            border-radius: 20px;
-            font-size: 16px;
-            text-align: center;
-            display: block;
-        }
-        select, input {
-            background: #1b361b;
-            color: white;
-            outline: none;
-        }
-        button {
-            background: #4caf50;
-            color: white;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-        button:hover {
-            background: #66bb6a;
-        }
-        #resultado {
-            margin-top: 20px;
-            text-align: center;
-            max-height: 200px;
-            overflow-y: auto;
-        }
-        #sugerencias {
-            background: #1b361b;
-            color: white;
             border-radius: 10px;
+            text-align: center;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 2px solid green;
+            border-radius: 5px;
+        }
+        #result {
+            font-weight: bold;
+            background: #0A3D50;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .suggestions {
+            border: 1px solid #ccc;
+            background: white;
             max-height: 150px;
             overflow-y: auto;
             position: absolute;
-            width: calc(100% - 40px);
-            max-width: 460px;
-            z-index: 10;
-            text-align: center;
+            width: 90%;
+            display: none;
         }
-        .sugerencia {
-            padding: 8px;
+        .suggestion {
+            padding: 10px;
             cursor: pointer;
         }
-        .sugerencia:hover {
-            background: #66bb6a;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        th, td {
-            border: 1px solid white;
-            padding: 5px;
+        .suggestion:hover {
+            background: #ddd;
         }
     </style>
-    <script>
-        let datosEstaciones = [];
-
-        async function cargarDatos() {
-            const response = await fetch("listado-estaciones-completo-act.xlsx");
-            const data = await response.text();
-            datosEstaciones = data.split("\n").map(row => row.split(";"));
-        }
-
-        function actualizarPlaceholder() {
-            let criterio = document.getElementById("criterio").value;
-            let entrada = document.getElementById("entrada");
-            entrada.placeholder = criterio === "codigo" ? "Introduce código de estación" : "Introduce nombre de estación";
-        }
-
-        function mostrarSugerencias() {
-            let criterio = document.getElementById("criterio").value;
-            let entrada = document.getElementById("entrada").value.trim().toUpperCase();
-            let sugerenciasDiv = document.getElementById("sugerencias");
-            sugerenciasDiv.innerHTML = "";
-            if (!entrada || datosEstaciones.length === 0) return;
-
-            let sugerencias = datosEstaciones.slice(1).filter(fila => 
-                criterio === "codigo" ? fila[0].startsWith(entrada) : fila[1].toUpperCase().includes(entrada)
-            ).slice(0, 5);
-
-            sugerencias.forEach(fila => {
-                let div = document.createElement("div");
-                div.classList.add("sugerencia");
-                div.textContent = criterio === "codigo" ? fila[0] : fila[1];
-                div.onclick = () => {
-                    document.getElementById("entrada").value = criterio === "codigo" ? fila[0] : fila[1];
-                    sugerenciasDiv.innerHTML = "";
-                };
-                sugerenciasDiv.appendChild(div);
-            });
-        }
-
-        async function buscar() {
-            let criterio = document.getElementById("criterio").value;
-            let entrada = document.getElementById("entrada").value.trim().toUpperCase();
-            let resultado = document.getElementById("resultado");
-            resultado.innerHTML = "Buscando...";
-
-            let encabezados = datosEstaciones[0];
-            let filas = datosEstaciones.slice(1);
-
-            let encontrados = filas.filter(fila => 
-                (criterio === "codigo" && fila[0].trim() === entrada) || 
-                (criterio === "nombre" && fila[1].toUpperCase().includes(entrada))
-            );
-
-            resultado.innerHTML = encontrados.length ? 
-                `<table><tr>${encabezados.map(h => `<th>${h}</th>`).join("")}</tr>` + 
-                encontrados.map(f => `<tr>${f.map(d => `<td>${d}</td>`).join("")}</tr>`).join("") + 
-                "</table>" : "No se encontraron resultados";
-        }
-
-        document.addEventListener("DOMContentLoaded", cargarDatos);
-    </script>
 </head>
 <body>
-    <div class="contenedor">
-        <h1>Buscador de Estaciones Renfe</h1>
-        <select id="criterio" onchange="actualizarPlaceholder()">
-            <option value="codigo">Buscar por código</option>
-            <option value="nombre">Buscar por nombre</option>
-        </select>
-        <input type="text" id="entrada" placeholder="Introduce código de estación" oninput="mostrarSugerencias()">
-        <div id="sugerencias"></div>
-        <button onclick="buscar()">Buscar</button>
-        <div id="resultado"></div>
+    <div class="container">
+        <h2>Buscador de Estaciones</h2>
+        <input type="text" id="codigo" placeholder="Código de estación">
+        <div id="suggestions" class="suggestions"></div>
+        <div id="result">Nombre estación</div>
     </div>
+    
+    <script>
+        let estaciones = {};
+        
+        function cargarExcel() {
+            fetch('listado-codigos-estaciones.xlsx')
+                .then(response => response.arrayBuffer())
+                .then(data => {
+                    let workbook = XLSX.read(data, { type: 'array' });
+                    let sheet = workbook.Sheets[workbook.SheetNames[0]];
+                    let jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+                    jsonData.forEach(row => {
+                        if (row[0] && row[1]) {
+                            estaciones[row[0]] = row[1];
+                        }
+                    });
+                });
+        }
+
+        $(document).ready(function() {
+            cargarExcel();
+            
+            $('#codigo').on('input', function() {
+                let input = $(this).val();
+                let suggestions = Object.keys(estaciones).filter(cod => cod.startsWith(input));
+                $('#suggestions').empty().toggle(suggestions.length > 0);
+                
+                suggestions.forEach(cod => {
+                    $('#suggestions').append(`<div class='suggestion' data-codigo='${cod}'>${cod} - ${estaciones[cod]}</div>`);
+                });
+            });
+            
+            $(document).on('click', '.suggestion', function() {
+                let codigo = $(this).data('codigo');
+                $('#codigo').val(codigo);
+                $('#result').text(estaciones[codigo]);
+                $('#suggestions').hide();
+            });
+        });
+    </script>
 </body>
 </html>
